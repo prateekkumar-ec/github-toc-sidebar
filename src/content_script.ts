@@ -41,8 +41,8 @@ function createToC(headings: NodeListOf<Element>) {
     children: HTMLUListElement | null;
     childrenWrapper: HTMLDivElement | null;
     isCollapsed: boolean;
+    icon: HTMLSpanElement;
   }
-  const headingNodes: HeadingNode[] = [];
 
   const getHeadingLevel = (tagName: string): number => {
     return parseInt(tagName.charAt(1)); // h1 -> 1, h2 -> 2, etc.
@@ -91,9 +91,9 @@ function createToC(headings: NodeListOf<Element>) {
       level: level,
       children: null,
       childrenWrapper: null,
-      isCollapsed: false
+      isCollapsed: false,
+      icon: icon
     }
-    headingNodes.push(node)
 
     // Add click handler for collapse icon
     icon.addEventListener('click', (e) => {
@@ -138,11 +138,8 @@ function createToC(headings: NodeListOf<Element>) {
         parent.element.appendChild(parent.childrenWrapper)
         
         // Update parent's icon to show it has children
-        const parentIcon = parent.element.querySelector('.collapse-icon') as HTMLSpanElement
-        if (parentIcon) {
-          parentIcon.classList.add('has-children')
-          parentIcon.innerHTML = '▸'
-        }
+        parent.icon.classList.add('has-children')
+        parent.icon.innerHTML = '▸'
       }
       parent.children.appendChild(li)
     } else {
