@@ -34,6 +34,8 @@ function createToC(headings: NodeListOf<Element>) {
   toc.appendChild(scrollWrapper)
   scrollWrapper.appendChild(ul)
 
+  const MAX_HEADING_LEVEL = 6;
+
   // Track heading hierarchy
   interface HeadingNode {
     element: HTMLLIElement;
@@ -150,7 +152,7 @@ function createToC(headings: NodeListOf<Element>) {
     // Update the last parent at this level
     lastParentAtLevel.set(level, node)
     // Clear all deeper levels
-    for (let clearLevel = level + 1; clearLevel <= 6; clearLevel++) {
+    for (let clearLevel = level + 1; clearLevel <= MAX_HEADING_LEVEL; clearLevel++) {
       lastParentAtLevel.delete(clearLevel)
     }
   }

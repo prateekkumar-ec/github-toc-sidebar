@@ -1,5 +1,8 @@
 $indent-unit: 16px;
 $gradient-height: 48px;
+$transition-duration-normal: 0.3s;
+$transition-duration-fast: 0.2s;
+$transition-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
 
 .toc-sidebar {
   padding: 16px 0;
@@ -83,7 +86,7 @@ $gradient-height: 48px;
     flex-shrink: 0;
     font-size: 24px;
     opacity: 0;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+    transition: transform $transition-duration-fast $transition-easing-standard, opacity $transition-duration-fast ease;
     user-select: none;
     transform: rotate(90deg);
     
@@ -105,9 +108,9 @@ $gradient-height: 48px;
   .toc-children {
     display: grid;
     grid-template-rows: 1fr;
-    transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                margin-top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: grid-template-rows $transition-duration-normal $transition-easing-standard, 
+                margin-top $transition-duration-normal $transition-easing-standard,
+                opacity $transition-duration-normal $transition-easing-standard;
     margin-top: 4px;
     opacity: 1;
     
