@@ -34,18 +34,80 @@ function createToC(headings: NodeListOf<Element>) {
   toc.appendChild(scrollWrapper)
   scrollWrapper.appendChild(ul)
 
-  const createLi = (text: string, href: string, headingTag: string) => {
+  const MAX_HEADING_LEVEL = 6;
+
+  // Track heading hierarchy
+  interface HeadingNode {
+    element: HTMLLIElement;
+    level: number;
+    children: HTMLUListElement | null;
+    childrenWrapper: HTMLDivElement | null;
+    isCollapsed: boolean;
+    icon: HTMLSpanElement;
+  }
+
+  const getHeadingLevel = (tagName: string): number => {
+    return parseInt(tagName.charAt(1)); // h1 -> 1, h2 -> 2, etc.
+  }
+
+  const createCollapseIcon = (hasChildren: boolean): HTMLSpanElement => {
+    const icon = document.createElement('span')
+    icon.classList.add('collapse-icon')
+    if (hasChildren) {
+      icon.innerHTML = '▸' // chevron that will rotate
+      icon.classList.add('has-children')
+    }
+    return icon
+  }
+
+  const toggleCollapse = (node: HeadingNode, icon: HTMLSpanElement) => {
+    if (!node.childrenWrapper) return
+    
+    node.isCollapsed = !node.isCollapsed
+    if (node.isCollapsed) {
+      node.childrenWrapper.classList.add('collapsed')
+      icon.classList.add('collapsed')
+    } else {
+      node.childrenWrapper.classList.remove('collapsed')
+      icon.classList.remove('collapsed')
+    }
+  }
+
+  const createLi = (text: string, href: string, headingTag: string, level: number) => {
     debugLog('createLi', text, href, headingTag)
     const li = document.createElement('li')
-      const a = document.createElement('a')
-      a.setAttribute('href', href)
-        const label = document.createElement('div')
-        label.classList.add(`toc-label-${headingTag}`)
-        label.innerText = text
-        a.appendChild(label)
-      li.appendChild(a)
-    ul.appendChild(li)
+    const a = document.createElement('a')
+    a.setAttribute('href', href)
+    
+    const icon = createCollapseIcon(false)
+    const label = document.createElement('div')
+    label.classList.add(`toc-label-${headingTag}`)
+    label.innerText = text
+    
+    a.appendChild(icon)
+    a.appendChild(label)
+    li.appendChild(a)
+
+    const node: HeadingNode = {
+      element: li,
+      level: level,
+      children: null,
+      childrenWrapper: null,
+      isCollapsed: false,
+      icon: icon
+    }
+
+    // Add click handler for collapse icon
+    icon.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      toggleCollapse(node, icon)
+    })
+
+    return { li, node, icon }
   }
+
+  let lastParentAtLevel: Map<number, HeadingNode> = new Map()
 
   for (const h of headings) {
     const href = getHeadingHref(h)
@@ -53,8 +115,48 @@ function createToC(headings: NodeListOf<Element>) {
     if (!href) {
       continue
     }
-    createLi((h.textContent || '').trim(), href, h.tagName.toLowerCase())
+    
+    const level = getHeadingLevel(h.tagName.toLowerCase())
+    const { li, node, icon } = createLi((h.textContent || '').trim(), href, h.tagName.toLowerCase(), level)
+    
+    // Find parent (closest heading with lower level)
+    let parent: HeadingNode | null = null
+    for (let parentLevel = level - 1; parentLevel >= 1; parentLevel--) {
+      if (lastParentAtLevel.has(parentLevel)) {
+        parent = lastParentAtLevel.get(parentLevel)!
+        break
+      }
+    }
+
+    if (parent) {
+      // This is a child of a parent heading
+      if (!parent.children) {
+        // Create children container for parent
+        parent.childrenWrapper = document.createElement('div')
+        parent.childrenWrapper.classList.add('toc-children')
+        
+        parent.children = document.createElement('ul')
+        parent.childrenWrapper.appendChild(parent.children)
+        parent.element.appendChild(parent.childrenWrapper)
+        
+        // Update parent's icon to show it has children
+        parent.icon.classList.add('has-children')
+        parent.icon.innerHTML = '▸'
+      }
+      parent.children.appendChild(li)
+    } else {
+      // This is a top-level heading
+      ul.appendChild(li)
+    }
+
+    // Update the last parent at this level
+    lastParentAtLevel.set(level, node)
+    // Clear all deeper levels
+    for (let clearLevel = level + 1; clearLevel <= MAX_HEADING_LEVEL; clearLevel++) {
+      lastParentAtLevel.delete(clearLevel)
+    }
   }
+  
   return toc
 }
 
