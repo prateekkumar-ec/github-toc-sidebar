@@ -44,7 +44,11 @@ function createToC(headings: NodeListOf<Element>) {
     childrenWrapper: HTMLDivElement | null;
     isCollapsed: boolean;
     icon: HTMLSpanElement;
+    href: string;
   }
+
+  // Map to track heading nodes by their href for auto-expansion
+  const nodesByHref = new Map<string, HeadingNode>();
 
   const getHeadingLevel = (tagName: string): number => {
     return parseInt(tagName.charAt(1)); // h1 -> 1, h2 -> 2, etc.
@@ -94,7 +98,8 @@ function createToC(headings: NodeListOf<Element>) {
       children: null,
       childrenWrapper: null,
       isCollapsed: false,
-      icon: icon
+      icon: icon,
+      href: href
     }
 
     // Add click handler for collapse icon
@@ -118,6 +123,9 @@ function createToC(headings: NodeListOf<Element>) {
     
     const level = getHeadingLevel(h.tagName.toLowerCase())
     const { li, node, icon } = createLi((h.textContent || '').trim(), href, h.tagName.toLowerCase(), level)
+    
+    // Store node by href for later lookup
+    nodesByHref.set(href, node);
     
     // Find parent (closest heading with lower level)
     let parent: HeadingNode | null = null
@@ -157,11 +165,15 @@ function createToC(headings: NodeListOf<Element>) {
     }
   }
   
+  // Store nodesByHref on toc element for access in scroll handler
+  (toc as any).__nodesByHref = nodesByHref;
+  
   return toc
 }
 
 function activeTocLinkOnScroll(toc: HTMLDivElement, headings: NodeListOf<Element>) {
     const activeClass = 'active';
+    const nodesByHref = (toc as any).__nodesByHref as Map<string, any>;
 
     function getLinkByHeading(heading: Element) {
       const href = getHeadingHref(heading);
@@ -177,9 +189,40 @@ function activeTocLinkOnScroll(toc: HTMLDivElement, headings: NodeListOf<Element
       return rect.top
     }
 
+    function expandParents(href: string) {
+      const node = nodesByHref.get(href);
+      if (!node) return;
+      
+      // Find all parent nodes and expand them
+      let currentElement = node.element.parentElement;
+      while (currentElement) {
+        // Check if this is a collapsed children wrapper
+        if (currentElement.classList.contains('toc-children') && currentElement.classList.contains('collapsed')) {
+          // Find the parent node that owns this wrapper
+          const parentLi = currentElement.parentElement as HTMLLIElement;
+          if (parentLi) {
+            for (const [, parentNode] of nodesByHref) {
+              if (parentNode.element === parentLi && parentNode.childrenWrapper === currentElement) {
+                // Expand this parent
+                parentNode.isCollapsed = false;
+                parentNode.childrenWrapper.classList.remove('collapsed');
+                parentNode.icon.classList.remove('collapsed');
+                break;
+              }
+            }
+          }
+        }
+        currentElement = currentElement.parentElement;
+      }
+    }
+
     function activate(heading: Element, lastActiveHeading?: Element) {
       if (lastActiveHeading) {
         getLinkByHeading(lastActiveHeading)?.parentElement!.classList.remove(activeClass);
+      }
+      const href = getHeadingHref(heading);
+      if (href) {
+        expandParents(href);
       }
       getLinkByHeading(heading)?.parentElement!.classList.add(activeClass);
     }

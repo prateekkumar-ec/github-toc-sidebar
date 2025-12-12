@@ -44,9 +44,13 @@ $transition-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
       text-decoration: none;
     }
   }
-  ul {
+  // Only apply to top-level ul, not nested ones
+  > .toc-sidebar-content > .scroll-wrapper > ul {
     list-style: none;
     margin-bottom: $gradient-height;
+  }
+
+  ul {
     li {
       border-radius: 6px;
       cursor: pointer;
@@ -59,9 +63,16 @@ $transition-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
       align-items: center;
       gap: 6px;
     }
-    li:hover, li.active {
+    // Only show hover/active background on direct hover, not on parent items
+    li > a:hover {
       background-color: rgba(177, 186, 196, 0.12);
       box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px max(1px, 0.0625rem) inset;
+      border-radius: 6px;
+    }
+    li.active > a {
+      background-color: rgba(177, 186, 196, 0.12);
+      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px max(1px, 0.0625rem) inset;
+      border-radius: 6px;
     }
 
     li.active::after {
